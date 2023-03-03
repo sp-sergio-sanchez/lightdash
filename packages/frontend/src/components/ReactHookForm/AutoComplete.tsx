@@ -139,16 +139,16 @@ const ControlledSuggest: FC<{
     suggestProps,
     disabled,
     items,
-    field,
+    field: { ref, value, onChange, ...restField },
     groupBy,
     ...props
 }) => {
-    const activeItem = items.find((item) => item.value === field.value);
+    const activeItem = items.find((item) => item.value === value);
     const onItemSelect = useCallback(
         (item: Item) => {
-            field.onChange(item.value);
+            onChange(item.value);
         },
-        [field],
+        [onChange],
     );
 
     const renderGroupedItemList: ItemListRenderer<Item> = useCallback(
@@ -177,7 +177,7 @@ const ControlledSuggest: FC<{
             fill
             items={items}
             {...props}
-            {...field}
+            {...restField}
             noResults={
                 isLoading ? (
                     <Spinner size={16} style={{ margin: 12 }} />
@@ -190,6 +190,9 @@ const ControlledSuggest: FC<{
             activeItem={activeItem}
             itemRenderer={renderItem}
             onItemSelect={onItemSelect}
+            inputProps={{
+                inputRef: ref,
+            }}
             itemListRenderer={
                 groupBy !== undefined ? renderGroupedItemList : undefined
             }

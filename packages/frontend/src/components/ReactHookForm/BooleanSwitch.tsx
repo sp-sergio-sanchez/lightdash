@@ -9,16 +9,17 @@ interface Props extends Omit<InputWrapperProps, 'render'> {
 const BooleanSwitch: FC<Props> = ({ switchProps, ...rest }) => (
     <InputWrapper
         {...rest}
-        render={(props, { field }) => (
+        render={(props, { field: { ref, value, ...restField } }) => (
             <Switch
                 inline
                 large
                 innerLabelChecked="Yes"
                 innerLabel="No"
                 {...switchProps}
-                checked={field.value}
+                checked={value}
                 {...props}
-                {...field}
+                {...restField}
+                inputRef={ref}
             />
         )}
     />
