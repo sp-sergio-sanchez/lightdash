@@ -1,6 +1,8 @@
 import { FormGroup, Icon } from '@blueprintjs/core';
+import { ErrorMessage } from '@hookform/error-message';
 import React, { useState } from 'react';
-import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
+import { get, useFieldArray, useFormContext } from 'react-hook-form';
+import { UseFieldArrayProps } from 'react-hook-form/dist/types/fieldArray';
 import DocumentationHelpButton from '../DocumentationHelpButton';
 import { LabelInfoToggleButton } from './FromGroup.styles';
 
@@ -18,6 +20,7 @@ type Props = {
     renderAppendRowButton: (
         append: ReturnType<typeof useFieldArray>['append'],
     ) => JSX.Element;
+    rules?: UseFieldArrayProps['rules'];
 };
 export const ArrayInput = ({
     name,
@@ -26,11 +29,17 @@ export const ArrayInput = ({
     labelHelp,
     renderRow,
     renderAppendRowButton,
+    rules,
 }: Props) => {
-    const { control } = useFormContext();
-    const { fields, remove, append } = useFieldArray({ name, control });
+    const {
+        control,
+        formState: { errors },
+    } = useFormContext();
+    const { fields, remove, append } = useFieldArray({ name, control, rules });
 
     const [isLabelInfoOpen, setIsLabelInfoOpen] = useState<boolean>(false);
+    const rootFieldName = `${name}.root`;
+    const error = get(errors, rootFieldName);
 
     return (
         <FormGroup
@@ -55,6 +64,10 @@ export const ArrayInput = ({
                         </LabelInfoToggleButton>
                     )}
                 </>
+            }
+            intent={error ? 'danger' : 'none'}
+            helperText={
+                <ErrorMessage errors={errors} name={rootFieldName} as="p" />
             }
         >
             {fields.map((field, index) => renderRow(field.id, index, remove))}

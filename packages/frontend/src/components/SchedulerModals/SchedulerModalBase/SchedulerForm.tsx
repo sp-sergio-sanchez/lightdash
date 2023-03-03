@@ -269,6 +269,11 @@ const SchedulerForm: FC<
                             name="targets"
                             label=""
                             disabled={disabled}
+                            rules={{
+                                required:
+                                    'At least one destination is required',
+                                minLength: 1,
+                            }}
                             renderRow={(key, index, remove) => {
                                 setShowDestinationLabel(false);
                                 const isSlack =

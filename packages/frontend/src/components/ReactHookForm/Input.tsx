@@ -5,7 +5,9 @@ import InputWrapper, { InputWrapperProps } from './InputWrapper';
 const Input: FC<Omit<InputWrapperProps, 'render'>> = ({ ...rest }) => (
     <InputWrapper
         {...rest}
-        render={(props, { field }) => <InputGroup {...props} {...field} />}
+        render={(props, { field }) => (
+            <InputGroup {...props} {...field} inputRef={field.ref} />
+        )}
     />
 );
 
