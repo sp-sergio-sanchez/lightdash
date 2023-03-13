@@ -22,6 +22,7 @@ import {
     formatRows,
     getDimensions,
     getFields,
+    getFilterRulesFromGroup,
     getItemId,
     getItemMap,
     getMetrics,
@@ -1497,6 +1498,47 @@ export class ProjectService {
         return DbtCloudMetricsModel.getMetrics(
             integration.serviceToken,
             integration.metricsJobId,
+        );
+    }
+
+    async getDependencyGraph(user: SessionUser, projectUuid: string) {
+        const { organizationUuid } = await this.projectModel.get(projectUuid);
+        // This dependency graph is only available to admins
+        if (
+            user.ability.cannot(
+                'manage',
+                subject('Project', { organizationUuid, projectUuid }),
+            )
+        ) {
+            throw new ForbiddenError();
+        }
+        const chartUuids = await this.savedChartModel.getUuidsByProjectUuid(
+            projectUuid,
+        );
+
+        const charts = await Promise.all(
+            chartUuids.map(async (chartUuid) => {
+                const chart = await this.savedChartModel.get(chartUuid);
+                const dimensionInFilters = getFilterRulesFromGroup(
+                    chart.metricQuery.filters.dimensions,
+                ).map((rule) => rule.target.fieldId);
+                const metricsInFilters = getFilterRulesFromGroup(
+                    chart.metricQuery.filters.metrics,
+                ).map((rule) => rule.target.fieldId);
+                return {
+                    uuid: chart.uuid,
+                    name: chart.name,
+                    tableName: chart.tableName,
+                    dimensions: [
+                        ...chart.metricQuery.dimensions,
+                        ...dimensionInFilters,
+                    ],
+                    metrics: [
+                        ...chart.metricQuery.metrics,
+                        ...metricsInFilters,
+                    ],
+                };
+            }),
         );
     }
 }

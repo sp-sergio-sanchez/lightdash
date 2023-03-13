@@ -875,3 +875,24 @@ projectRouter.delete(
         }
     },
 );
+
+projectRouter.get(
+    '/dependenciesGraph',
+    allowApiKeyAuthentication,
+    isAuthenticated,
+    unauthorisedInDemo,
+    async (req, res, next) => {
+        try {
+            const results = await projectService.getDependencyGraph(
+                req.user!,
+                req.params.projectUuid,
+            );
+            res.json({
+                status: 'ok',
+                results,
+            });
+        } catch (e) {
+            next(e);
+        }
+    },
+);

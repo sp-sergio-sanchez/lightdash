@@ -12,6 +12,7 @@ import {
     UpdateSavedChart,
 } from '@lightdash/common';
 import { Knex } from 'knex';
+import { DashboardVersionsTableName } from '../database/entities/dashboards';
 import { OrganizationTableName } from '../database/entities/organizations';
 import {
     PinnedChartTableName,
@@ -25,6 +26,7 @@ import {
     DbSavedChartTableCalculationInsert,
     SavedChartAdditionalMetricTableName,
     SavedChartsTableName,
+    SavedChartVersionsTableName,
 } from '../database/entities/savedCharts';
 import {
     getSpace,
@@ -206,6 +208,27 @@ export class SavedChartModel {
 
     constructor(dependencies: Dependencies) {
         this.database = dependencies.database;
+    }
+
+    async getUuidsByProjectUuid(projectUuid: string): Promise<string[]> {
+        const spaceIds = await this.database(SpaceTableName)
+            .select('space_id')
+            .where('project_uuid', projectUuid);
+        const chartIds = await this.database(SavedChartsTableName)
+            .select('saved_query_id')
+            .whereIn(
+                'space_id',
+                spaceIds.map((space) => space.space_id),
+            );
+        const charts = await this.database(SavedChartVersionsTableName)
+            .select('saved_query_uuid')
+            .whereIn(
+                'saved_query_id',
+                chartIds.map((chart) => chart.saved_query_id),
+            )
+            .orderBy('saved_queries_versions.created_at', 'desc')
+            .distinctOn(`${DashboardVersionsTableName}.dashboard_id`);
+        return charts.map((chart) => chart.saved_query_uuid);
     }
 
     async create(
