@@ -267,7 +267,7 @@ export const renderFilterRuleSql = (
     const fieldType = field.type;
     const fieldSql = isMetric(field)
         ? `${fieldQuoteChar}${filterRule.target.fieldId}${fieldQuoteChar}`
-        : field.compiledSql;
+        : field.name;
 
     switch (field.type) {
         case DimensionType.STRING:
