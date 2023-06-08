@@ -36,6 +36,7 @@ services:
       - "../:/usr/app"
       - "../examples/full-jaffle-shop-demo/dbt:/usr/app/dbt"
       - "node_modules:/usr/app/node_modules/" # clears the node_modules directory so it doesn't sync (v.slow on MacOS)
+      - "../../metricflow/config:/root/.metricflow/"
     ports:
       - "8080:8080"
       - "3000:3000"

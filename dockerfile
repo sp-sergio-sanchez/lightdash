@@ -18,16 +18,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && apt-get clean
 
-# dbt
+# dbt & metricflow
 RUN python3 -m venv /usr/local/venv
 RUN /usr/local/venv/bin/pip install \
     "dbt-postgres~=1.4.0" \
     "dbt-redshift~=1.4.0" \
-    "dbt-snowflake~=1.4.0" \
-    "dbt-bigquery~=1.4.0" \
-    "dbt-databricks~=1.4.0" \
-    "dbt-trino~=1.4.0" \
-    "psycopg2-binary==2.8.6"
+    #"dbt-snowflake~=1.4.0" \
+    #"dbt-bigquery~=1.4.0" \
+    #"dbt-databricks~=1.4.0" \
+    #"dbt-trino~=1.4.0" \
+    "psycopg2-binary==2.8.6" \
+    "metricflow~=0.140.0"
 ENV PATH $PATH:/usr/local/venv/bin
 
 
