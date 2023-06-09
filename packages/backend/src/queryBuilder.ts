@@ -93,14 +93,15 @@ export const buildQuery = ({
             `${sort.descending ? ' -' : ''}${sort.fieldId}`,
     );
     // Enable sorting
-    // for (let i = 0; i < fieldOrders.length; i++) {
-    //     if (fieldOrders[i] === '-date_day'){
-    //         fieldOrders[i] = 'date'
-    //     }
-    //     else if (fieldOrders[i].includes("date_week") || fieldOrders[i].includes("date_month") || fieldOrders[i].includes("date_year")){
-    //         fieldOrders[i] = fieldOrders[i].replace("date_", 'date___')
-    //     }
-    // }
+    for (let i = 0; i < fieldOrders.length; i++) {
+        if (fieldOrders[i].includes('date_day')){
+            fieldOrders[i] = 'date';
+        }
+
+        else if (fieldOrders[i].includes("date_week") || fieldOrders[i].includes("date_month") || fieldOrders[i].includes("date_year")){
+            fieldOrders[i] = fieldOrders[i].replace("date_", 'date__')
+        }
+    }
     const mfOrderBy =
         fieldOrders.length > 0 ? `--order ${fieldOrders.join(',').replace("mvp_metrics_", '')}` : '';
 
@@ -149,6 +150,7 @@ export const buildQuery = ({
     };
 
     const nestedFilterSql = getNestedFilterSQLFromGroup(filters.dimensions);
+
     const sqlWhere =
         filters.dimensions !== undefined && nestedFilterSql
             ? `--where "${nestedFilterSql}"`
@@ -166,6 +168,7 @@ export const buildQuery = ({
                     `Filter has a reference to an unknown metric: ${filter.target.fieldId}`,
                 );
             }
+
             return renderFilterRuleSql(
                 filter,
                 field,
@@ -211,7 +214,7 @@ export const buildQuery = ({
         mfMetrics,
         mfDimensions,
         mfWhere,
-        //mfOrder,
+        mfOrder,
         mfLimit
     ].join(' ');
     return {
