@@ -11,6 +11,53 @@ import * as pg from 'pg';
 import { PoolConfig } from 'pg';
 import WarehouseBaseClient from './WarehouseBaseClient';
 
+import fs from 'fs';
+import csv from 'csv-parser';
+import util from "node:util";
+
+// This is super ugly, I know :$
+let csv_headers: string[] = [];
+let pre = 'mvp_metrics_';
+async function readCSVFile(filePath: string): Promise<Record<string, any>[]> {
+  const results: Record<string, any>[] = [];
+
+
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(filePath)
+      .pipe(csv({
+          // It is not required but i'll leave it just in case
+          // mapValues: ({ header, index, value }) => {
+          //     console.log(header);
+          //     if (header ===  pre + 'date_day' ||  header ===  pre + 'date_week' || header ===  pre + 'date_month' || header ===  pre + 'date_year'){
+          //         console.log(header);
+          //         return new Date(value);
+          //     } else {
+          //         return value;
+          //     }
+          // },
+          mapHeaders: ({ header, index }) => {
+              console.log("Mapping header: " + header);
+              if (header.includes("__")){
+                  return pre + header.replace('__', '_');
+              }
+              else if (header === 'date'){
+                  return pre + 'date_day';
+              }
+              else {
+                  return pre + header;
+              }
+          }
+      }))
+      .on('data', (data) => results.push(data as unknown as Record<string, any>[]))
+      .on('end', () => resolve(results))
+      .on('error', (error) => reject(error))
+      .on('headers', (headers) => {
+        csv_headers = headers;
+      });
+  });
+}
+
+
 export enum PostgresTypes {
     INTEGER = 'integer',
     INT = 'int',
@@ -138,17 +185,61 @@ export class PostgresClient<
 
     async runQuery(sql: string) {
         try {
-            const results = await this.pool.query(sql); // automatically checkouts client and cleans up
-            const fields = results.fields.reduce(
-                (acc, { name, dataTypeID }) => ({
-                    ...acc,
-                    [name]: {
-                        type: convertDataTypeIdToDimensionType(dataTypeID),
-                    },
-                }),
-                {},
-            );
-            return { fields, rows: results.rows };
+            if (sql.toUpperCase().includes("FROM")){
+                const results = await this.pool.query(sql); // automatically checkouts client and cleans up
+                const fields = results.fields.reduce(
+                    (acc, { name, dataTypeID }) => ({
+                        ...acc,
+                        [name]: {
+                            type: convertDataTypeIdToDimensionType(dataTypeID),
+                        },
+                    }),
+                    {},
+                );
+                return { fields, rows: results.rows };
+            }
+            else {
+                const tmp = require('tmp');
+                const tmpobj = tmp.fileSync();
+                console.log('File: ', tmpobj.name);
+                console.log('Filedescriptor: ', tmpobj.fd);
+                console.log()
+
+                // If we don't need the file anymore we could manually call the removeCallback
+                // But that is not necessary if we didn't pass the keep option because the library
+                // will clean after itself.
+                var exec = require('child_process').exec;
+                var cmd = sql + ' --csv ' + tmpobj.name;
+                const execPromise = util.promisify(exec);
+                const {stdout, stderr} = await execPromise(cmd);
+                //const {o, e} = await execPromise("sed -i 's/date/f_activity_date_day/' " + tmpobj.name);
+                //await execPromise("sed -i 's/active_users/f_activity_active_users/' " + tmpobj.name);
+                //const exec_csv = util.promisify(readCSVFile);
+                const data = await readCSVFile(tmpobj.name); //exec_csv(tmpobj.name);
+                const d = data as unknown as Record<string, any>[];
+                //console.log("DATA!");
+                //console.log(data); // This will log the parsed data as an array of objects
+                var fields: Record<string, { type: DimensionType }> = {};
+                csv_headers.forEach((column) => {
+                    if (column.includes("date")){
+                        fields[column] = { 'type': DimensionType.DATE};
+                    }
+                    else if (column.includes('active_users')) {
+                        fields[column] = { 'type': DimensionType.NUMBER};
+                    }
+                    else {
+                        fields[column] = { 'type': DimensionType.STRING};
+                    }
+
+                });
+                // = {'metric_time': { 'type': DimensionType.STRING}, 'platform': { 'type': DimensionType.STRING}, 'active_users': { 'type': DimensionType.STRING}};
+
+                console.log(fields);
+                console.log(data);
+                console.log("JEJE");
+                tmpobj.removeCallback();
+                return { fields: fields, rows: d};
+            }
         } catch (e) {
             throw new WarehouseQueryError(e.message);
         }

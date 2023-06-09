@@ -92,8 +92,17 @@ export const buildQuery = ({
         (sort) =>
             `${sort.descending ? ' -' : ''}${sort.fieldId}`,
     );
+    // Enable sorting
+    // for (let i = 0; i < fieldOrders.length; i++) {
+    //     if (fieldOrders[i] === '-date_day'){
+    //         fieldOrders[i] = 'date'
+    //     }
+    //     else if (fieldOrders[i].includes("date_week") || fieldOrders[i].includes("date_month") || fieldOrders[i].includes("date_year")){
+    //         fieldOrders[i] = fieldOrders[i].replace("date_", 'date___')
+    //     }
+    // }
     const mfOrderBy =
-        fieldOrders.length > 0 ? `--order ${fieldOrders.join(',')}` : '';
+        fieldOrders.length > 0 ? `--order ${fieldOrders.join(',').replace("mvp_metrics_", '')}` : '';
 
     const sqlFilterRule = (filter: FilterRule) => {
         const field = getFields(explore).find(
@@ -179,10 +188,20 @@ export const buildQuery = ({
     //                   .join(getOperatorSql(filters.metrics))}`
     //             : '';
     // }
+    var clean_dimensions: string[] = [];
+    dimensionSelects.forEach((dimension: string) => {
+       if (dimension == 'date_day'){
+           clean_dimensions.push('date');
+       }
+       else {
+           clean_dimensions.push(dimension);
+       }
+    });
+
 
     const mfCall = `mf query`;
     const mfMetrics = `--metrics ${[...metricSelects].join(',')}`;
-    const mfDimensions = `--dimensions ${[...dimensionSelects].join(',')}`;
+    const mfDimensions = `--dimensions ${[...clean_dimensions].join(',')}`;
     const mfOrder = `${mfOrderBy}`;
     const mfWhere = `${sqlWhere}`;
     const mfLimit = `--limit ${limit}`;
@@ -192,7 +211,7 @@ export const buildQuery = ({
         mfMetrics,
         mfDimensions,
         mfWhere,
-        mfOrder,
+        //mfOrder,
         mfLimit
     ].join(' ');
     return {
@@ -200,3 +219,4 @@ export const buildQuery = ({
         hasExampleMetric,
     };
 };
+
